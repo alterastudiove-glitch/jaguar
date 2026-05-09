@@ -1,0 +1,6 @@
+{
+  "name": "Impreza: Personalización Pro",
+  "description": "Plataforma de personalización textil y estampados con configurador dinámico de productos, seguimiento en tiempo real y gestión de pedidos al mayor/detal.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}
