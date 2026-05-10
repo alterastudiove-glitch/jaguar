@@ -58,6 +58,9 @@ export function Cart() {
         items: items,
         totalAmount: finalAmount,
         status: 'recibido',
+        statusHistory: {
+          recibido: new Date().toISOString()
+        },
         securityCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
         depositPaid: false,
         createdAt: new Date().toISOString(),

@@ -135,6 +135,7 @@ export function Orders() {
                                 const orderStatusIndex = TIMELINE_STEPS.findIndex(s => s.id === order.status);
                                 const isCompleted = idx <= orderStatusIndex;
                                 const isCurrent = idx === orderStatusIndex;
+                                const statusTime = order.statusHistory?.[step.id as OrderStatus];
                                 
                                 return (
                                   <div key={idx} className="relative flex gap-6 group">
@@ -152,12 +153,19 @@ export function Orders() {
                                        "flex-1 space-y-1 transition-opacity duration-500",
                                        !isCompleted && "opacity-40"
                                      )}>
-                                        <p className={cn(
-                                          "text-[11px] font-black uppercase tracking-wider",
-                                          isCompleted ? "text-slate-800" : "text-slate-400"
-                                        )}>
-                                          {step.label}
-                                        </p>
+                                        <div className="flex justify-between items-start">
+                                           <p className={cn(
+                                             "text-[11px] font-black uppercase tracking-wider",
+                                             isCompleted ? "text-slate-800" : "text-slate-400"
+                                           )}>
+                                             {step.label}
+                                           </p>
+                                           {statusTime && (
+                                              <span className="text-[8px] font-black text-indigo-400 bg-white px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm whitespace-nowrap">
+                                                 {format(new Date(statusTime), 'HH:mm • dd/MM')}
+                                              </span>
+                                           )}
+                                        </div>
                                         <p className="text-[10px] text-slate-400 font-medium leading-tight">
                                           {step.desc}
                                         </p>

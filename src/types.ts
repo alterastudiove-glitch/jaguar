@@ -74,6 +74,7 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  statusHistory?: Partial<Record<OrderStatus, string>>;
   securityCode: string;
   paymentReference?: string;
   depositPaid: boolean;

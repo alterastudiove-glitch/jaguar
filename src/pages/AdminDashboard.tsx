@@ -68,7 +68,12 @@ export function AdminDashboard() {
 
   const updateStatus = async (orderId: string, status: OrderStatus, depositPaid?: boolean) => {
     const orderRef = doc(db, 'orders', orderId);
-    const updates: any = { status, updatedAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const updates: any = { 
+      status, 
+      updatedAt: now,
+      [`statusHistory.${status}`]: now
+    };
     if (depositPaid !== undefined) updates.depositPaid = depositPaid;
     await updateDoc(orderRef, updates);
   };
