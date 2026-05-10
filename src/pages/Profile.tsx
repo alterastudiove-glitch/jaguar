@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LogOut, Settings, MessageCircle, Heart, LayoutDashboard, ShieldCheck, Instagram, Facebook, Smartphone, MapPin, User as UserIcon, CreditCard as IdIcon, Save, X, ChevronLeft } from 'lucide-react';
+import { LogOut, Settings, MessageCircle, Heart, LayoutDashboard, ShieldCheck, Instagram, Facebook, Smartphone, MapPin, User as UserIcon, CreditCard as IdIcon, Save, X, ChevronLeft, Mail, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -24,11 +24,15 @@ const SOCIALS = [
 
 export function Profile() {
   const navigate = useNavigate();
-  const { profile, login, logout, user } = useAuth();
+  const { profile, loginWithEmail, registerWithEmail, resetPassword, logout, user } = useAuth();
   const [seeding, setSeeding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' });
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     displayName: profile?.displayName || '',
     phone: profile?.phone || '',
@@ -178,28 +182,141 @@ export function Profile() {
     window.open('https://wa.me/584142314194?text=Hola! Necesito soporte con mi pedido.', '_blank');
   };
 
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsSaving(true);
+    try {
+      if (authMode === 'login') {
+        await loginWithEmail(authForm.email, authForm.password);
+      } else if (authMode === 'register') {
+        await registerWithEmail(authForm.email, authForm.password, authForm.name);
+      } else if (authMode === 'forgot') {
+        await resetPassword(authForm.email);
+        setAuthSuccess('Enlace de recuperación enviado. Revisa tu correo.');
+        setTimeout(() => setAuthMode('login'), 3000);
+      }
+    } catch (error: any) {
+      setAuthError(error.message || 'Error en la operación');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!user) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 space-y-12 animate-in fade-in duration-1000">
+      <div className="min-h-full flex flex-col items-center justify-center p-8 space-y-12 animate-in fade-in duration-1000">
         <div className="relative">
-           <div className="w-24 h-24 bg-indigo-600 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-indigo-200 rotate-12 relative z-10">
-              <ShieldCheck className="w-12 h-12 text-white -rotate-12" />
+           <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-100 rotate-12 relative z-10">
+              <ShieldCheck className="w-10 h-10 text-white -rotate-12" />
            </div>
            <div className="absolute inset-0 bg-indigo-400/20 rounded-[2.5rem] blur-2xl -z-10" />
         </div>
-        <div className="text-center space-y-3">
-           <h2 className="text-2xl font-black text-slate-800 tracking-tight">Bienvenido a Impreza</h2>
-           <p className="text-xs text-slate-400 font-medium max-w-[220px] leading-relaxed mx-auto italic">
-              Personalización textil profesional al alcance de un toque.
+        
+        <div className="text-center space-y-3 w-full">
+           <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+             {authMode === 'login' ? 'Bienvenido de nuevo' : authMode === 'register' ? 'Crea tu cuenta' : 'Recuperar Cuenta'}
+           </h2>
+           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest max-w-[220px] mx-auto italic">
+              {authMode === 'login' ? 'Ingresa para gestionar tus pedidos' : authMode === 'register' ? 'Regístrate para una experiencia personalizada' : 'Ingresa tu correo para recibir un enlace'}
            </p>
         </div>
-        <button 
-          onClick={login}
-          className="w-full py-4 bg-white border border-slate-100 rounded-2xl font-black text-xs tracking-[0.2em] flex items-center justify-center gap-4 shadow-2xl shadow-slate-200 hover:bg-slate-50 transition-all active:scale-95 uppercase"
-        >
-          <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-          Acceder con Google
-        </button>
+
+        <form onSubmit={handleAuth} className="w-full space-y-4">
+           {authMode === 'register' && (
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest px-2">Nombre</label>
+                 <div className="relative">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input 
+                      type="text" 
+                      placeholder="Tu nombre"
+                      value={authForm.name}
+                      onChange={e => setAuthForm({ ...authForm, name: e.target.value })}
+                      className="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
+                      required
+                    />
+                 </div>
+              </div>
+           )}
+
+           <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest px-2">Correo Electrónico</label>
+              <div className="relative">
+                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                 <input 
+                   type="email" 
+                   placeholder="ejemplo@correo.com"
+                   value={authForm.email}
+                   onChange={e => setAuthForm({ ...authForm, email: e.target.value })}
+                   className="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
+                   required
+                 />
+              </div>
+           </div>
+
+           {authMode !== 'forgot' && (
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest px-2">Contraseña</label>
+                 <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input 
+                      type="password" 
+                      placeholder="••••••••"
+                      value={authForm.password}
+                      onChange={e => setAuthForm({ ...authForm, password: e.target.value })}
+                      className="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
+                      required
+                    />
+                 </div>
+                 {authMode === 'login' && (
+                    <button 
+                      type="button"
+                      onClick={() => setAuthMode('forgot')}
+                      className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-2"
+                    >
+                       ¿Olvidaste tu contraseña?
+                    </button>
+                 )}
+              </div>
+           )}
+
+           {authError && (
+              <p className="text-[10px] text-red-500 font-bold text-center px-4">{authError}</p>
+           )}
+           
+           {authSuccess && (
+              <p className="text-[10px] text-emerald-500 font-bold text-center px-4">{authSuccess}</p>
+           )}
+
+           <button 
+             type="submit" 
+             disabled={isSaving}
+             className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 uppercase disabled:opacity-50"
+           >
+             {isSaving ? 'Procesando...' : (authMode === 'login' ? 'Entrar' : authMode === 'register' ? 'Registrarse' : 'Enviar Enlace')}
+           </button>
+        </form>
+
+        <div className="text-center space-y-4">
+           {authMode !== 'login' && (
+              <button 
+                onClick={() => setAuthMode('login')}
+                className="block w-full text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+              >
+                 ¿Ya tienes cuenta? Ingresa
+              </button>
+           )}
+           {authMode !== 'register' && (
+              <button 
+                onClick={() => setAuthMode('register')}
+                className="block w-full text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+              >
+                 ¿No tienes cuenta? Regístrate
+              </button>
+           )}
+        </div>
       </div>
     );
   }
